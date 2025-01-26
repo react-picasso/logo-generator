@@ -5,8 +5,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 
-const inter = Manrope({
-	variable: "--font-inter",
+const manrope = Manrope({
+	variable: "--font-manrope",
 	subsets: ["latin"],
 	weight: ["200", "300", "400", "500", "600", "700", "800"],
 });
@@ -24,7 +24,7 @@ export default function RootLayout({
 	return (
 		<ClerkProvider>
 			<html lang="en" suppressHydrationWarning>
-				<body className={`${inter.variable} font-primary antialiased`}>
+				<body className={`${manrope.variable} font-primary antialiased`}>
 					<ThemeProvider
 						attribute="class"
 						defaultTheme="system"
