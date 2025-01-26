@@ -8,7 +8,7 @@ const redis = new Redis({
 
 export const rateLimit = new Ratelimit({
 	redis: Redis.fromEnv(),
-	limiter: Ratelimit.fixedWindow(3, "30 d"),
+	limiter: Ratelimit.fixedWindow(10, "30 d"),
 	analytics: true,
 	prefix: "logocreator",
 });
