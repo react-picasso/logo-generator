@@ -21,7 +21,7 @@ export default function Navbar() {
 				<div className="hidden md:flex items-center font-semibold space-x-8">
 					<Link href="/#features">Features</Link>
 					<Link href="/#faq">FAQs</Link>
-					<Link href="/pricing">Gallery</Link>
+					<Link href="/gallery">Gallery</Link>
 				</div>
 				<div className="flex items-center flex-1 justify-end space-x-4">
 					<ToggleTheme />
