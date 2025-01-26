@@ -19,6 +19,7 @@ import { SignInButton } from "@clerk/nextjs";
 import { SignedOut } from "@clerk/nextjs";
 import { domain } from "@/lib/domain";
 import Link from "next/link";
+
 export default function Footer() {
 	return (
 		<>
@@ -36,10 +37,10 @@ export default function Footer() {
 						</Badge>
 						<h1 className="text-4xl md:text-6xl text-center font-medium">
 							Are you ready to explore your
-							<span className="text-muted-foreground/40 text-3xl md:text-5xl">
+							<span className="text-muted-foreground text-3xl md:text-5xl">
 								<br /> Creativity with{" "}
 								<span className="bg-gradient-to-tr mx-2 from-white via-primary to-white bg-clip-text text-transparent">
-									LogoAI
+									Logek
 								</span>
 							</span>
 							?
@@ -66,18 +67,42 @@ export default function Footer() {
 										<IconSparkles className="size-4" />
 									</Button>
 								</Link>
+								{/* <Link href="/generate">
+              <Button className="text-white">
+                Get Started
+              </Button> 
+            </Link> */}
 							</SignedIn>
 						</div>
 					</div>
+
 					<div className="flex border-border/40 pt-8 w-full">
 						<div className="max-w-6xl mx-auto px-4 w-full flex items-center justify-between">
 							<div className="text-sm md:text-base">
-								&copy; {new Date().getFullYear()} Logek
+								&copy; {new Date().getFullYear()} LogoAI
 							</div>
 							<div className="flex gap-4 items-center justify-center">
-								<IconBrandGithub className="size-5 md:size-8" />
-								<IconBrandLinkedin className="size-5 md:size-8" />
-								<IconBrandX className="size-5 md:size-8" />
+								<Link
+									href="https://github.com/react-picasso"
+									target="_blank"
+									className="hover:text-primary transition-colors"
+								>
+									<IconBrandGithub className="size-5 md:size-8" />
+								</Link>
+								<Link
+									href="https://linkedin.com"
+									target="_blank"
+									className="hover:text-primary transition-colors"
+								>
+									<IconBrandLinkedin className="size-5 md:size-8" />
+								</Link>
+								<Link
+									href="https://iampratham.dev"
+									target="_blank"
+									className="hover:text-primary transition-colors"
+								>
+									<IconBrandX className="size-5 md:size-8" />
+								</Link>
 							</div>
 						</div>
 					</div>

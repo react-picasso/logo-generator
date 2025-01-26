@@ -3,85 +3,115 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { allLogos, downloadImage } from "../actions/actions";
 import { SelectLogo } from "@/db/schema";
-import { allLogos } from "../actions/actions";
-import Navbar from "@/components/landing/navbar";
 import { useToast } from "@/hooks/use-toast";
-import { displayedLogos } from "@/constants/data";
+import Navbar from "@/components/landing/navbar";
 import LogoCard from "@/components/logo-card";
+import SkeletonCard from "@/components/skeleton-card";
 
 export default function Gallery() {
+	const { toast } = useToast();
 	const [logos, setLogos] = useState<SelectLogo[]>([]);
 	const [showAll, setShowAll] = useState(false);
-	const { toast } = useToast();
-	const [isLoading, setIsLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(true);
+	const [isDownloading, setIsDownloading] = useState(false);
 
 	useEffect(() => {
 		const fetchLogos = async () => {
-			const fetchedLogos = await allLogos();
-			if (fetchedLogos) {
-				setLogos(fetchedLogos);
-			} else {
+			try {
+				const fetchedLogos = await allLogos();
+				if (fetchedLogos) {
+					setLogos(fetchedLogos);
+				} else {
+					toast({
+						title: "Error",
+						description: "Failed to load logos",
+						variant: "destructive",
+					});
+				}
+			} catch (error) {
 				toast({
 					title: "Error",
 					description: "Failed to load logos",
 					variant: "destructive",
 				});
+			} finally {
+				setIsLoading(false);
 			}
 		};
-
 		fetchLogos();
 	}, [toast]);
 
 	const displayedLogos = showAll ? logos : logos.slice(0, 12);
 
-	const handleDownload = (imageUrl: string) => {
-		window.open(imageUrl, "_blank");
-		toast({
-			title: "Opening image",
-			description: "The logo will open in a new tab",
-		});
-	};
-
-	const SkeletonCard = () => {
-		return (
-			<Card className="group rounded-2xl">
-				<CardContent className="w-full rounded-2xl">
-					<div className="w-full rounded-t-2xl overflow-hidden aspect-square bg-slate-200 animate-pulse" />
-					<div className="rounded-b-xl border-t p-4">
-						<div className="flex justify-between items-center">
-							<div className="h-6 bg-slate-200 rounded animate-pulse w-1/3" />
-							<div className="h-4 bg-slate-200 rounded animate-pulse w-1/4" />
-						</div>
-						<div className="flex gap-2 my-2">
-							<div className="w-6 h-6 rounded-[8px] bg-slate-200 animate-pulse" />
-							<div className="w-6 h-6 rounded-[8px] bg-slate-200 animate-pulse" />
-						</div>
-						<div className="h-9 bg-slate-200 rounded animate-pulse w-full mt-2" />
-					</div>
-				</CardContent>
-			</Card>
-		);
+	const handleDownload = async (imageUrl: string) => {
+		setIsDownloading(true);
+		try {
+			const result = await downloadImage(imageUrl);
+			if (result.success && result.data) {
+				const a = document.createElement("a");
+				a.href = result.data;
+				a.download = `logo.webp`;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				toast({
+					title: "Download started",
+					description: "Your logo is being downloaded",
+				});
+			} else {
+				throw new Error("Failed to download logo");
+			}
+		} catch (error) {
+			toast({
+				title: "Error",
+				description:
+					error instanceof Error
+						? error.message
+						: "An unexpected error occurred while downloading",
+				variant: "destructive",
+			});
+		} finally {
+			setIsDownloading(false);
+		}
 	};
 
 	return (
 		<div className="min-h-screen">
 			<Navbar />
 			<div className="max-w-6xl mx-auto mt-20 px-4 sm:px-6 lg:px-8 py-8">
-				<h1 className="text-3xl font-bold mb-8">
+				<h1 className="text-3xl font-semibold mb-8">
 					Recent
 					<span className="bg-gradient-to-tr mx-2 from-white via-primary to-white bg-clip-text text-transparent">
 						Generations
 					</span>{" "}
 				</h1>
-				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
-					<LogoCard
-						logos={displayedLogos}
-						handleDownload={handleDownload}
-					/>
+				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+					{isLoading ? (
+						// Show 12 skeleton cards while loading
+						[...Array(12)].map((_, index) => (
+							<SkeletonCard key={index} />
+						))
+					) : logos.length > 0 ? (
+						displayedLogos.map((logo) => (
+							<LogoCard
+								key={logo.id}
+								logo={logo}
+								onDownload={() =>
+									handleDownload(logo.image_url)
+								}
+							/>
+						))
+					) : (
+						<div className="col-span-full text-center text-muted-foreground py-12">
+							No logos generated yet
+						</div>
+					)}
 				</div>
-				{logos.length > 12 && (
+
+				{!isLoading && logos.length > 12 && (
 					<div className="flex justify-center mt-8">
 						<Button
 							onClick={() => setShowAll(!showAll)}

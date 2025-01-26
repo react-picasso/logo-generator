@@ -8,6 +8,9 @@ import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { domain } from "@/lib/domain";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import AnimatedShinyText from "../ui/animated-shiny-text";
+import { ArrowRightIcon } from "lucide-react";
 
 export default function Hero() {
 	const { isSignedIn } = useUser();
@@ -17,6 +20,13 @@ export default function Hero() {
 		<>
 			<div className="relative overflow-hidden">
 				<section className="flex max-w-6xl mx-auto relative flex-col items-center justify-center h-full pt-28 px-4 sm:pt-44">
+                    <div className={cn("group relative rounded-full border border-black/5 bg-neutral-100 text-sm sm:text-base max-sm:mb-2 text-white transition-all ease-in hover:cursor-pointer hover:bg-neutral-200 dark:border-white/5 dark:bg-neutral-900 dark:hover:bg-neutral-800")}>
+                        <AnimatedShinyText className="inline-flex items-center">
+                            <span>✨ Powered by <Link href="https://dub.sh/nebius" target="_blank">
+                            Nebius AI</Link></span>
+                            <ArrowRightIcon className="ml-1 size-2.5 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
+                        </AnimatedShinyText>
+                    </div>
 					<Gradient />
 					<FloatingIcons />
 					<div className="text-4xl sm:text-5xl md:text-5xl lg:text-7xl font-medium text-center">

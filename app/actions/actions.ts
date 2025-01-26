@@ -4,38 +4,11 @@ import OpenAI from "openai";
 import { z } from "zod";
 import dedent from "dedent";
 import { clerkClient, currentUser } from "@clerk/nextjs/server";
-import { InsertLogo, logosTable } from "@/db/schema";
+import { InsertLogo, logosTable, SelectLogo } from "@/db/schema";
 import { db } from "@/db";
-import { desc, eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { rateLimit } from "@/lib/upstash";
 import { toast } from "@/hooks/use-toast";
-
-export async function downloadImage(url: string) {
-	"use server";
-
-	try {
-		const response = await fetch(url);
-
-		if (!response.ok) {
-			throw new Error("Failed to fetch image.");
-		}
-
-		const contentType = response.headers.get("content-type");
-		const buffer = await response.arrayBuffer();
-		const base64Image = Buffer.from(buffer).toString("base64");
-
-		return {
-			success: true,
-			data: `data:${contentType};base64,${base64Image}`,
-		};
-	} catch (error) {
-		console.error("Error downloading image:", error);
-		return {
-			success: false,
-			error: "Failed to download image",
-		};
-	}
-}
 
 const apiKey = process.env.NEBIUS_API_KEY;
 if (!apiKey) {
@@ -80,7 +53,6 @@ const styleLookup: { [key: string]: string } = {
 
 export async function generateLogo(formData: z.infer<typeof FormSchema>) {
 	"use server";
-
 	try {
 		const user = await currentUser();
 		if (!user) {
@@ -99,8 +71,7 @@ export async function generateLogo(formData: z.infer<typeof FormSchema>) {
 			},
 		});
 
-		console.log("Your remaining logo generation limit is:", remaining);
-
+		console.log("your remaining logo generation limit is", remaining);
 		if (remaining === 1) {
 			await toast({
 				title: "Warning",
@@ -109,7 +80,7 @@ export async function generateLogo(formData: z.infer<typeof FormSchema>) {
 			});
 		}
 
-		if (!remaining) {
+		if (!rateLimitSuccess) {
 			return {
 				success: false,
 				error: "You've reached your logo generation limit. Please try again later.",
@@ -120,15 +91,16 @@ export async function generateLogo(formData: z.infer<typeof FormSchema>) {
 
 		const prompt = dedent`A single logo, high-quality, award-winning professional design, made for both digital and print media, only contains a few vector shapes, ${
 			styleLookup[validatedData.style]
-		} 
-        
-        Primary color is ${validatedData.primaryColor.toLowerCase()} and background color is ${validatedData.secondaryColor.toLowerCase()}. The company name is ${
+		}
+
+    Primary color is ${validatedData.primaryColor.toLowerCase()} and background color is ${validatedData.secondaryColor.toLowerCase()}. The company name is ${
 			validatedData.companyName
 		}, make sure to include the company name in the logo. ${
 			validatedData
 				? `Additional info: ${validatedData.additionalInfo}`
 				: ""
 		}`;
+
 		const response = await client.images.generate({
 			model: validatedData.model,
 			prompt: prompt,
@@ -151,7 +123,7 @@ export async function generateLogo(formData: z.infer<typeof FormSchema>) {
 		try {
 			await db.insert(logosTable).values(DatabaseData);
 		} catch (error) {
-			console.error("Error inserting logo into database");
+			console.error("Error inserting logo into database:", error);
 			throw error;
 		}
 
@@ -176,22 +148,56 @@ export async function checkHistory() {
 		const userLogos = await db
 			.select()
 			.from(logosTable)
-			.where(eq(logosTable.userId, user.id))
+			.where(
+				user.externalId
+					? eq(logosTable.userId, user.externalId)
+					: eq(logosTable.userId, user.id)
+			)
 			.orderBy(desc(logosTable.createdAt));
 
 		return userLogos;
 	} catch (error) {
-		console.error(error);
+		console.error("Error fetching user logos:", error);
 		return null;
 	}
 }
 
 export async function allLogos() {
 	try {
-		const allLogos = await db.select().from(logosTable);
+		const allLogos = await db
+			.select()
+			.from(logosTable)
+			.orderBy(desc(logosTable.createdAt));
 		return allLogos;
 	} catch (error) {
-		console.error(error);
+		console.error("Error fetchiing logos" + error);
 		return null;
+	}
+}
+
+export async function downloadImage(url: string) {
+	"use server";
+
+	try {
+		const response = await fetch(url);
+
+		if (!response.ok) {
+			throw new Error("Failed to fetch image");
+		}
+
+		const contentType = response.headers.get("content-type");
+		const buffer = await response.arrayBuffer();
+		const base64Image = Buffer.from(buffer).toString("base64");
+
+		return {
+			success: true,
+			data: `data:${contentType};base64,${base64Image}`,
+		};
+	} catch (error) {
+		console.error("Error downloading image:", error);
+		return {
+			success: false,
+			error: "Failed to download image",
+		};
 	}
 }

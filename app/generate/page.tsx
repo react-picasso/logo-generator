@@ -1,19 +1,13 @@
 "use client";
 
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-	Crown,
-	Download,
-	History,
-	Palette,
-	RefreshCw,
-	Wand2,
-} from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { useState } from "react";
+import { Palette, Download, RefreshCw } from "lucide-react";
+import { generateLogo, downloadImage } from "../actions/actions";
 import {
 	Select,
 	SelectContent,
@@ -21,52 +15,68 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { downloadImage, generateLogo } from "../actions/actions";
-import { UserButton, useUser } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
+import { motion } from "framer-motion";
+import { useUser } from "@clerk/nextjs";
+import { redirect, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import Navbar from "@/components/landing/navbar";
+import {
+	IconBolt,
+	IconBulb,
+	IconColorFilter,
+	IconComponents,
+	IconCube,
+	IconFlame,
+	IconHistory,
+	IconMinimize,
+	IconSparkles,
+} from "@tabler/icons-react";
+import {
+	IconBrandGithub,
+	IconBrandLinkedin,
+	IconBrandX,
+} from "@tabler/icons-react";
 
 const STYLE_OPTIONS = [
 	{
 		id: "minimal",
 		name: "Minimal",
-		icon: "○",
+		icon: IconMinimize,
 		details:
 			"Flashy, attention grabbing, bold, futuristic, and eye-catching. Use vibrant neon colors with metallic, shiny, and glossy accents.",
 	},
 	{
 		id: "tech",
 		name: "Technology",
-		icon: "⚡",
+		icon: IconBolt,
 		details:
 			"highly detailed, sharp focus, cinematic, photorealistic, Minimalist, clean, sleek, neutral color pallete with subtle accents, clean lines, shadows, and flat.",
 	},
 	{
 		id: "corporate",
 		name: "Corporate",
-		icon: "◆",
+		icon: IconComponents,
 		details:
 			"modern, forward-thinking, flat design, geometric shapes, clean lines, natural colors with subtle accents, use strategic negative space to create visual interest.",
 	},
 	{
 		id: "creative",
 		name: "Creative",
-		icon: "★",
+		icon: IconBulb,
 		details:
 			"playful, lighthearted, bright bold colors, rounded shapes, lively.",
 	},
 	{
 		id: "abstract",
 		name: "Abstract",
-		icon: "□",
+		icon: IconCube,
 		details:
 			"abstract, artistic, creative, unique shapes, patterns, and textures to create a visually interesting and wild logo.",
 	},
 	{
 		id: "flashy",
 		name: "Flashy",
-		icon: "💡",
+		icon: IconFlame,
 		details:
 			"Flashy, attention grabbing, bold, futuristic, and eye-catching. Use vibrant neon colors with metallic, shiny, and glossy accents.",
 	},
@@ -78,11 +88,11 @@ const MODEL_OPTIONS = [
 		name: "Stability AI SDXL",
 		description: "Better for artistic and creative logos",
 	},
-	{
-		id: "dall-e-3",
-		name: "DALL-E 3",
-		description: "Better for realistic and detailed logos",
-	},
+	// {
+	//   id: "dall-e-3",
+	//   name: "DALL-E 3",
+	//   description: "Better for realistic and detailed logos",
+	// },
 	{
 		id: "black-forest-labs/flux-schnell",
 		name: "Flux Schnell",
@@ -93,6 +103,12 @@ const MODEL_OPTIONS = [
 		name: "Flux Dev",
 		description: "Better for realistic and detailed logos",
 	},
+];
+
+const SIZE_OPTIONS = [
+	{ id: "256x256", name: "Small (256x256)" },
+	{ id: "512x512", name: "Medium (512x512)" },
+	{ id: "1024x1024", name: "Large (1024x1024)" },
 ];
 
 const COLOR_OPTIONS = [
@@ -114,54 +130,86 @@ const BACKGROUND_OPTIONS = [
 	{ id: "#F0FFF4", name: "Light Green" },
 ];
 
-const SIZE_OPTIONS = [
-	{ id: "256x256", name: "Small (256x256)" },
-	{ id: "512x512", name: "Medium (512x512)" },
-	{ id: "1024x1024", name: "Large (1024x1024)" },
-];
+const Footer = () => (
+	<div className="flex justify-between items-center mt-4 px-4 max-sm:flex-col">
+		<div className="px-4 py-2 text-sm max-sm:hidden">
+			Powered by{" "}
+			<Link
+				href="https://dub.sh/nebius"
+				className="text-foreground hover:text-primary transition-colors"
+			>
+				Nebius AI
+			</Link>
+		</div>
+
+		<div className="px-4 py-2 text-sm">
+			Made with ❤️ by{" "}
+			<Link
+				href="https://github.com/react-picasso"
+				target="_blank"
+				className="text-foreground hover:text-primary transition-colors"
+			>
+				Pratham
+			</Link>
+		</div>
+
+		<div className="flex gap-4 items-center max-sm:hidden">
+			{[
+				{
+					href: "https://github.com/react-picasso",
+					Icon: IconBrandGithub,
+				},
+				{ href: "https://www.linkedin.com", Icon: IconBrandLinkedin },
+				{ href: "https://iampratham.dev", Icon: IconBrandX },
+			].map(({ href, Icon }) => (
+				<Link
+					key={href}
+					href={href}
+					target="_blank"
+					className="hover:text-primary transition-colors"
+				>
+					<Icon className="size-5" />
+				</Link>
+			))}
+		</div>
+	</div>
+);
 
 export default function Home() {
 	const [companyName, setCompanyName] = useState("");
 	const [selectedStyle, setSelectedStyle] = useState("minimal");
 	const [primaryColor, setPrimaryColor] = useState("#2563EB");
 	const [backgroundColor, setBackgroundColor] = useState("#FFFFFF");
+	const [additionalInfo, setAdditionalInfo] = useState("");
+	const [loading, setLoading] = useState(false);
+	const [generatedLogo, setGeneratedLogo] = useState("");
+	const router = useRouter();
+
 	const [selectedModel, setSelectedModel] = useState<
 		| "stability-ai/sdxl"
 		| "dall-e-3"
 		| "black-forest-labs/flux-schnell"
 		| "black-forest-labs/flux-dev"
-	>("stability-ai/sdxl");
+	>("black-forest-labs/flux-schnell");
 	const [selectedSize, setSelectedSize] = useState<
 		"256x256" | "512x512" | "1024x1024"
 	>("512x512");
 	const [selectedQuality, setSelectedQuality] = useState<"standard" | "hd">(
 		"standard"
 	);
-	const [additionalInfo, setAdditionalInfo] = useState("");
-	const [loading, setLoading] = useState(false);
-	const [generatedLogo, setGeneratedLogo] = useState("");
 
-    const { isSignedIn, isLoaded, user } = useUser();
-    const { toast } = useToast();
+	const { isSignedIn, isLoaded, user } = useUser();
+	const { toast } = useToast();
 
-    if (!isLoaded) {
-        return (
-            <div>
-                <div className="min-h-screen flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-4">
-                        <RefreshCw className="h-8 w-8 animate-spin text-blue-600"/>
-                        <p className="text-slate-600">Loading...</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+	const [isDownloading, setIsDownloading] = useState(false);
 
-    if (!isSignedIn) {
-        return redirect("/");
-    }
+	const isFormValid = useMemo(() => {
+		return companyName.trim().length > 0;
+	}, [companyName]);
 
-	const handleGenerate = async () => {
+	const handleGenerate = useCallback(async () => {
+		if (!isFormValid) return;
+
 		setLoading(true);
 		try {
 			const result = await generateLogo({
@@ -178,134 +226,136 @@ export default function Home() {
 
 			if (result.success && result.url) {
 				setGeneratedLogo(result.url);
-                toast({
-                    title: "Logo generated successfully",
-                    description: "Your new logo is ready to download"
-                });
-			} else {
 				toast({
-                    title: "Generation failed",
-                    description: result.error || "Failed to generate logo",
-                    variant: "destructive",
-                });
+					title: "Success!",
+					description: "Your logo has been generated successfully",
+					variant: "success",
+				});
+			} else {
+				throw new Error(result.error || "Failed to generate logo");
 			}
+		} catch (error) {
+			toast({
+				title: "Error",
+				description:
+					error instanceof Error
+						? error.message
+						: "An unexpected error occurred",
+				variant: "destructive",
+			});
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [
+		companyName,
+		selectedStyle,
+		primaryColor,
+		backgroundColor,
+		selectedModel,
+		selectedSize,
+		selectedQuality,
+		additionalInfo,
+		isFormValid,
+		toast,
+	]);
 
-	const handleDownload = async () => {
+	const handleDownload = useCallback(async () => {
+		if (!generatedLogo) return;
+
+		setIsDownloading(true);
 		try {
 			const result = await downloadImage(generatedLogo);
 			if (result.success && result.data) {
 				const a = document.createElement("a");
 				a.href = result.data;
-				a.download = `${companyName}-logo.png`;
+				a.download = `${companyName.trim()}-logo.png`;
 				document.body.appendChild(a);
 				a.click();
 				document.body.removeChild(a);
-                toast({
-                    title: "Download started",
-                    description: "Your logo is being downloaded"
-                });
-			} else {
 				toast({
-                    title: "Download failed",
-                    description: "Failed to download logo",
-                    variant: "destructive",
-                });
+					title: "Download started",
+					description: "Your logo is being downloaded",
+				});
+			} else {
+				throw new Error("Failed to download logo");
 			}
 		} catch (error) {
 			toast({
-                title: "Error",
-                description: "An unexpected error occured while downloading",
-                variant: "destructive",
-            })
+				title: "Error",
+				description:
+					error instanceof Error
+						? error.message
+						: "An unexpected error occurred while downloading",
+				variant: "destructive",
+			});
+		} finally {
+			setIsDownloading(false);
 		}
-	};
+	}, [generatedLogo, companyName, toast]);
+
+	useEffect(() => {
+		if (!isSignedIn) {
+			router.push("/");
+		}
+	}, [isSignedIn, router]);
+
+	if (!isLoaded) {
+		return (
+			<div className="min-h-screen flex items-center justify-center">
+				<div className="flex flex-col items-center gap-4">
+					<RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+					<p className="text-slate-600">Loading...</p>
+				</div>
+			</div>
+		);
+	}
 
 	return (
-		<div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-			<nav className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex justify-between items-center h-16">
-						<Link href="/" className="text-xl font-semibold">
-							LogoAI
-						</Link>
+		<div className="max-h-screen">
+			<Navbar />
 
-						<div className="hidden md:flex items-center space-x-8">
-							<Link
-								href="/generate"
-								className="text-gray-500 hover:text-primary transition-colors"
-							>
-								Generate
-							</Link>
-							<Link
-								href="/gallery"
-								className="text-gray-500 hover:text-primary transition-colors"
-							>
-								Gallery
-							</Link>
-							<Link
-								href="/pricing"
-								className="text-gray-500 hover:text-primary transition-colors"
-							>
-								Pricing
-							</Link>
-						</div>
-
-						<div className="flex items-center gap-8">
-							<Link href="/history">
-								<Button
-									size="sm"
-									className="gap-2"
-								>
-									<History className="h-4 w-4" />
-									History
-								</Button>
-							</Link>
-							{/* <Button variant="outline" size="sm">
-								<Crown className="h-4 w-4 mr-2 text-amber-500" />
-								Upgrade to Pro
-							</Button> */}
-                            <UserButton />
-						</div>
+			<main className="max-w-6xl mx-auto px-4 mt-12 sm:px-6 lg:px-8 pt-8 h-[screen-height] overflow-y-hidden rounded-lg">
+				<div className="flex md:flex-row items-start gap-4 md:items-center justify-between flex-col-reverse mb-6">
+					<div className="text-3xl md:text-3xl font-medium">
+						Create your perfect <br /> logo
+						<span className="bg-gradient-to-tr mx-2 from-white via-primary to-white bg-clip-text text-transparent">
+							in minutes .
+						</span>
 					</div>
+					<Button
+						onClick={() => router.push("/history")}
+						className="w-fit"
+					>
+						<IconHistory className="w-4 scale-y-[-1] h-4" />
+						History
+					</Button>
 				</div>
-			</nav>
-
-			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-[screen-height] overflow-y-hidden rounded-lg">
-				<div className="text-center mb-12">
-					<h1 className="text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600 mb-4">
-						Create Your Perfect Logo
-					</h1>
-					<p className="text-gray-600 max-w-2xl mx-auto text-xl">
-						Create unique, professional logos in minutes.
-					</p>
-				</div>
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+				<div className="grid grid-cols-1 relative lg:grid-cols-2 gap-8">
 					{/* Left Column */}
 					<div>
-						<Card className="h-full">
+						<Card className="dark:bg-accent/20 border-2 border-primary/10 h-full">
 							<CardContent className="p-6 space-y-4">
-								<div>
-									<label className="text-sm font-medium text-slate-700">
+								{/* Brand Name */}
+								<div className="flex flex-col gap-2">
+									<label className="text-sm font-medium ml-2">
 										Brand Name
 									</label>
 									<Input
-										placeholder="Enter your brand name"
-										className="mt-1"
+										value={companyName}
 										onChange={(e) =>
 											setCompanyName(e.target.value)
 										}
-										value={companyName}
+										placeholder="Enter your brand name"
+										className="mt-1 h-12 border-accent"
 									/>
 								</div>
-								<div>
-									<label className="text-sm font-medium text-slate-700">
+
+								{/* Style Selection */}
+								<div className="flex flex-col gap-1">
+									<label className="text-sm font-medium ml-2">
 										Style
 									</label>
-									<div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1">
+									<div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mt-1">
 										{STYLE_OPTIONS.map((style) => (
 											<motion.button
 												key={style.id}
@@ -314,21 +364,23 @@ export default function Home() {
 												}
 												whileHover={{ scale: 1.02 }}
 												whileTap={{ scale: 0.98 }}
-												className={`p-2 rounded-lg border text-center transition-all ${
+												className={`p-4 rounded-lg border flex items-center gap-1 flex-col text-center transition-all ${
 													selectedStyle === style.id
-														? "border-blue-500 bg-blue-50/50 text-blue-700 ring-1 ring-blue-500"
-														: "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+														? "border-primary bg-primary/20 text-foreground font-semibold ring-1 ring-primary"
+														: "border-accent hover:bg-accent/20"
 												}`}
 											>
 												<motion.div
-													className="text-xl mb-1"
+													className="text-lg"
 													transition={{
 														duration: 0.3,
 													}}
 												>
-													{style.icon}
+													{
+														<style.icon className="w-5 h-5" />
+													}
 												</motion.div>
-												<div className="text-xs font-medium">
+												<div className="text-[10px] font-medium">
 													{style.name}
 												</div>
 											</motion.button>
@@ -336,17 +388,18 @@ export default function Home() {
 									</div>
 								</div>
 
+								{/* Colors and Model Selection Row */}
 								<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 									<div>
-										<label className="text-sm font-medium text-slate-700">
+										<label className="text-sm font-medium ml-2">
 											Primary Color
 										</label>
 										<Select
 											value={primaryColor}
 											onValueChange={setPrimaryColor}
 										>
-											<SelectTrigger className="mt-1">
-												<SelectValue>
+											<SelectTrigger className="mt-1 h-12 border-accent">
+												<SelectValue className="!bg-accent/20">
 													<div className="flex items-center gap-2">
 														<div
 															className="w-4 h-4 rounded-full"
@@ -360,7 +413,7 @@ export default function Home() {
 																c.id ===
 																primaryColor
 														)?.name ||
-															"Select color"}
+															"Select Color"}
 													</div>
 												</SelectValue>
 											</SelectTrigger>
@@ -386,14 +439,14 @@ export default function Home() {
 										</Select>
 									</div>
 									<div>
-										<label className="text-sm font-medium text-slate-700">
+										<label className="text-sm font-medium ml-2">
 											Background
 										</label>
 										<Select
 											value={backgroundColor}
 											onValueChange={setBackgroundColor}
 										>
-											<SelectTrigger className="mt-1">
+											<SelectTrigger className="mt-1 h-12 border-accent">
 												<SelectValue>
 													<div className="flex items-center gap-2">
 														<div
@@ -436,7 +489,7 @@ export default function Home() {
 										</Select>
 									</div>
 									<div>
-										<label className="text-sm font-medium text-slate-700">
+										<label className="text-sm font-medium">
 											AI Model
 										</label>
 										<Select
@@ -449,7 +502,7 @@ export default function Home() {
 													| "black-forest-labs/flux-dev"
 											) => setSelectedModel(value)}
 										>
-											<SelectTrigger className="mt-1">
+											<SelectTrigger className="mt-1 h-12 border-accent">
 												<SelectValue placeholder="Select Model" />
 											</SelectTrigger>
 											<SelectContent>
@@ -475,9 +528,10 @@ export default function Home() {
 									</div>
 								</div>
 
+								{/* Size and Quality Row */}
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									<div>
-										<label className="text-sm font-medium text-slate-700">
+										<label className="text-sm font-medium ml-2">
 											Image Size
 										</label>
 										<Select
@@ -489,7 +543,7 @@ export default function Home() {
 													| "1024x1024"
 											) => setSelectedSize(value)}
 										>
-											<SelectTrigger className="mt-1">
+											<SelectTrigger className="mt-1 h-12 border-accent">
 												<SelectValue placeholder="Select Size" />
 											</SelectTrigger>
 											<SelectContent>
@@ -505,7 +559,7 @@ export default function Home() {
 										</Select>
 									</div>
 									<div>
-										<label className="text-sm font-medium text-slate-700">
+										<label className="text-sm font-medium ml-2">
 											Quality
 										</label>
 										<Select
@@ -514,7 +568,7 @@ export default function Home() {
 												value: "standard" | "hd"
 											) => setSelectedQuality(value)}
 										>
-											<SelectTrigger className="mt-1">
+											<SelectTrigger className="mt-1 h-12 border-accent">
 												<SelectValue placeholder="Select Quality" />
 											</SelectTrigger>
 											<SelectContent>
@@ -528,8 +582,10 @@ export default function Home() {
 										</Select>
 									</div>
 								</div>
+
+								{/* Additional Details */}
 								<div>
-									<label className="text-sm font-medium text-slate-700">
+									<label className="text-sm font-medium ml-2">
 										Additional Details
 									</label>
 									<Textarea
@@ -538,23 +594,25 @@ export default function Home() {
 											setAdditionalInfo(e.target.value)
 										}
 										placeholder="Describe your brand personality, target audience, or any specific preferences..."
-										className="mt-1 h-20"
+										className="mt-1 h-28 px-4 py-3 border-accent"
 									/>
 								</div>
+
+								{/* Generate Button */}
 								<Button
 									onClick={handleGenerate}
-									className="w-full h-12 text-lg bg-blue-600 hover:bg-blue-700"
-									disabled={!companyName || loading}
+									disabled={!isFormValid || loading}
+									className="w-full h-12 text-lg bg-primary hover:bg-primary/80 disabled:opacity-50"
 								>
 									{loading ? (
 										<>
-											<RefreshCw className="mr-2 h-5 w-5 animate-spin" />
 											Generating...
+											<RefreshCw className="ml-2 h-5 w-5 animate-spin" />
 										</>
 									) : (
 										<>
-											<Wand2 className="mr-2 h-5 w-5" />
 											Generate Logo
+											<IconSparkles className="ml-2 h-5 w-5" />
 										</>
 									)}
 								</Button>
@@ -562,9 +620,10 @@ export default function Home() {
 						</Card>
 					</div>
 
-					<div>
-						<Card className="h-full">
-							<CardContent className="p-6">
+					{/* Right Column */}
+					<div className="">
+						<Card className="h-full rounded-3xl dark:bg-accent/20 ">
+							<CardContent className="p-6 h-full">
 								{generatedLogo ? (
 									<motion.div
 										className="space-y-6"
@@ -573,19 +632,19 @@ export default function Home() {
 										transition={{ duration: 0.4 }}
 									>
 										<div
-											className="aspect-square rounded-lg border-2 border-dashed border-slate-200 p-4"
+											className="aspect-square rounded-2xl"
 											style={{ backgroundColor }}
 										>
 											<img
 												src={generatedLogo}
 												alt="Generated logo"
-												className="w-full h-full object-contain"
+												className="w-full h-full rounded-2xl object-contain"
 											/>
 										</div>
 										<div className="flex gap-3">
 											<Button
 												onClick={handleGenerate}
-												className="flex-1 bg-blue-600 hover:bg-blue-700"
+												className="flex-1 bg-primary hover:bg-primary/80"
 											>
 												<RefreshCw className="mr-2 h-4 w-4" />
 												Generate New
@@ -602,17 +661,17 @@ export default function Home() {
 									</motion.div>
 								) : (
 									<motion.div
-										className="h-full flex items-center text-center p-8 pt-44"
+										className="h-full rounded-2xl flex items-center border-2 dark:border-primary/40 border-dashed justify-center text-center p-8"
 										initial={{ opacity: 0 }}
 										animate={{ opacity: 1 }}
 										transition={{ duration: 0.4 }}
 									>
 										<div className="max-w-md space-y-4">
-											<Palette className="h-12 w-12 mx-auto text-blue-600 opacity-50" />
-											<h3 className="text-xl font-semibold text-slate-800">
+											<IconColorFilter className="h-20 w-20 mx-auto text-primary opacity-50" />
+											<h3 className="text-xl font-semibold">
 												Your Logo will appear here
 											</h3>
-											<p className="text-slate-500">
+											<p className="text-neutral-500">
 												For best results, add additional
 												details and let our AI generate
 												a unique, professional logo
@@ -625,14 +684,7 @@ export default function Home() {
 						</Card>
 					</div>
 				</div>
-                <div className="flex justify-center items-center mt-10 gap-x-4">
-                    <div>
-                        Built with love by <Link href="https://iampratham.dev" className="text-blue-600 hover:text-blue-700">Pratham</Link>
-                    </div>
-                    <div>
-                        Powered by <Link href="https://nebius.com/" className="text-blue-600 hover:text-blue-700">Nebius AI</Link>
-                    </div>
-                </div>
+				<Footer />
 			</main>
 		</div>
 	);

@@ -15,12 +15,12 @@ export default function Features() {
           <div className="text-4xl md:text-6xl font-medium">
             Key
             <span className="bg-gradient-to-tr mx-2 from-white via-primary to-white bg-clip-text text-transparent">
-              Benifits
+              Benefits
             </span>
             of using
             <br />{" "}
-            <span className="text-muted-foreground/40 text-3xl md:text-5xl">
-              Our Logo generator
+            <span className="text-muted-foreground text-3xl md:text-5xl">
+              Logek
             </span>
           </div>
         </div>

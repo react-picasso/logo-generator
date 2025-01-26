@@ -22,7 +22,7 @@ export default function Faq() {
 							queries
 						</span>
 						<br />{" "}
-						<span className="text-muted-foreground/40 text-3xl md:text-5xl">
+						<span className="text-muted-foreground text-3xl md:text-5xl">
 							about Logek
 						</span>
 					</div>
