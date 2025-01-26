@@ -4,8 +4,15 @@ import FloatingIcons from "../floating-icons";
 import Gradient from "../gradient";
 import { Button } from "../ui/button";
 import { LogoCarousel } from "../ui/logo-carousel";
+import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs";
+import Link from "next/link";
+import { domain } from "@/lib/domain";
+import { useRouter } from "next/navigation";
 
 export default function Hero() {
+	const { isSignedIn } = useUser();
+	const router = useRouter();
+
 	return (
 		<>
 			<div className="relative overflow-hidden">
@@ -33,19 +40,35 @@ export default function Hero() {
 					</div>
 
 					<div className="mt-10 flex sm:flex-row flex-col w-full md:w-auto items-center gap-4">
-						<Button className="h-8 w-full md:w-auto px-6 py-5">
-							Try for free!{" "}
-							<IconPointerFilled className="w-4 h-4" />
-						</Button>
-						<Button
-							variant="outline"
-							className="h-8 w-full md:w-auto px-6 py-5"
-						>
-							See Examples{" "}
-							<IconSparkles className="fill-[hsl(var(--primary))] text-primary dark:fill-[hsl(var(--foreground))] dark:text-foreground" />
-						</Button>
+						{isSignedIn ? (
+							<Button
+								onClick={() => router.push("/generate")}
+								className="h-8 w-full md:w-auto px-6 py-5"
+							>
+								Go to Dashboard{" "}
+								<IconPointerFilled className="w-4 h-4" />
+							</Button>
+						) : (
+							<SignedOut>
+								<SignInButton
+									signUpForceRedirectUrl={`${domain}/generate`}
+									forceRedirectUrl={`${domain}/generate`}
+								>
+									<Button className="text-sm">Sign In</Button>
+								</SignInButton>
+							</SignedOut>
+						)}
+						<Link href="/gallery" className="w-full md:w-auto">
+							<Button
+								variant="outline"
+								className="h-8 w-full px-6 py-5 transition-all hover:shadow-[0_0_20px_2px_hsl(var(--primary))]"
+							>
+								See Examples{" "}
+								<IconSparkles className="fill-[hsl(var(--primary))] text-primary dark:fill-[hsl(var(--foreground))] dark:text-foreground" />
+							</Button>
+						</Link>
 					</div>
-                    <LogoCarousel />
+					<LogoCarousel />
 				</section>
 			</div>
 		</>
