@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { domain } from "@/lib/domain";
 
 const Navigation = () => {
     return (
@@ -22,14 +24,16 @@ const Navigation = () => {
                 </div>
 
                 <div className="flex items-center space-x-4">
-                    <Button className="hidden md:inline-flex" variant="ghost">
-                        Sign In
-                    </Button>
-                    <Link href="/generate">
-                        <Button className="text-white">
-                            Get Started
-                        </Button>
-                    </Link>
+                    <SignedOut>
+                        <SignInButton signUpForceRedirectUrl={`${domain}/generate`} forceRedirectUrl={`${domain}/generate`}>
+                            <Button variant="ghost" className="hidden md:inline-flex">
+                                Sign In
+                            </Button>
+                        </SignInButton>
+                    </SignedOut>
+                    <SignedIn>
+                        <UserButton />
+                    </SignedIn>
                 </div>
             </div>
         </nav>

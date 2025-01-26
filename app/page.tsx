@@ -41,7 +41,7 @@ export default function Home() {
 						</div>
 					</div>
 
-					<div className="relative mt-16">
+					{/* <div className="relative mt-16">
 						<div className="flex justify-center">
 							<img
 								src="https://antimetal.com/images/hero/preview.png"
@@ -49,7 +49,7 @@ export default function Home() {
 								className="rounded-3xl shadow-2xl max-w-[90%] w-auto h-auto"
 							/>
 						</div>
-					</div>
+					</div> */}
 				</section>
 
 				<section className="py-24 bg-surface px-6 lg:px-8">

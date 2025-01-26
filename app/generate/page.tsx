@@ -25,10 +25,48 @@ import { Textarea } from "@/components/ui/textarea";
 import { downloadImage, generateLogo } from "../actions/actions";
 
 const STYLE_OPTIONS = [
-	{ id: "minimal", name: "Minimal", icon: "○" },
-	{ id: "tech", name: "Technology", icon: "⚡" },
-	{ id: "corporate", name: "Corporate", icon: "◆" },
-	{ id: "creative", name: "Creative", icon: "★" },
+	{
+		id: "minimal",
+		name: "Minimal",
+		icon: "○",
+		details:
+			"Flashy, attention grabbing, bold, futuristic, and eye-catching. Use vibrant neon colors with metallic, shiny, and glossy accents.",
+	},
+	{
+		id: "tech",
+		name: "Technology",
+		icon: "⚡",
+		details:
+			"highly detailed, sharp focus, cinematic, photorealistic, Minimalist, clean, sleek, neutral color pallete with subtle accents, clean lines, shadows, and flat.",
+	},
+	{
+		id: "corporate",
+		name: "Corporate",
+		icon: "◆",
+		details:
+			"modern, forward-thinking, flat design, geometric shapes, clean lines, natural colors with subtle accents, use strategic negative space to create visual interest.",
+	},
+	{
+		id: "creative",
+		name: "Creative",
+		icon: "★",
+		details:
+			"playful, lighthearted, bright bold colors, rounded shapes, lively.",
+	},
+	{
+		id: "abstract",
+		name: "Abstract",
+		icon: "□",
+		details:
+			"abstract, artistic, creative, unique shapes, patterns, and textures to create a visually interesting and wild logo.",
+	},
+	{
+		id: "flashy",
+		name: "Flashy",
+		icon: "💡",
+		details:
+			"Flashy, attention grabbing, bold, futuristic, and eye-catching. Use vibrant neon colors with metallic, shiny, and glossy accents.",
+	},
 ];
 
 const MODEL_OPTIONS = [
@@ -100,48 +138,48 @@ export default function Home() {
 	const [loading, setLoading] = useState(false);
 	const [generatedLogo, setGeneratedLogo] = useState("");
 
-    const handleGenerate = async () => {
-        setLoading(true);
-        try {
-            const result = await generateLogo({
-                companyName,
-                style: selectedStyle,
-                symbolPreference: "modern and professional",
-                primaryColor,
-                secondaryColor: backgroundColor,
-                model: selectedModel,
-                size: selectedSize,
-                quality: selectedQuality,
-                additionalInfo
-            });
+	const handleGenerate = async () => {
+		setLoading(true);
+		try {
+			const result = await generateLogo({
+				companyName,
+				style: selectedStyle,
+				symbolPreference: "modern and professional",
+				primaryColor,
+				secondaryColor: backgroundColor,
+				model: selectedModel,
+				size: selectedSize,
+				quality: selectedQuality,
+				additionalInfo,
+			});
 
-            if (result.success && result.url) {
-                setGeneratedLogo(result.url);
-            } else {
-                console.error("Failed to generate logo.")
-            }
-        } finally {
-            setLoading(false);
-        }
-    } 
+			if (result.success && result.url) {
+				setGeneratedLogo(result.url);
+			} else {
+				console.error("Failed to generate logo.");
+			}
+		} finally {
+			setLoading(false);
+		}
+	};
 
-    const handleDownload = async () => {
-        try {
-            const result = await downloadImage(generatedLogo);
-            if (result.success && result.data) {
-                const a = document.createElement("a");
-                a.href = result.data;
-                a.download = `${companyName}-logo.png`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } else {
-                console.error('Failed to download logo');
-            }
-        } catch (error) {
-            console.error('Error downloading logo:', error);
-        }
-    }
+	const handleDownload = async () => {
+		try {
+			const result = await downloadImage(generatedLogo);
+			if (result.success && result.data) {
+				const a = document.createElement("a");
+				a.href = result.data;
+				a.download = `${companyName}-logo.png`;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+			} else {
+				console.error("Failed to download logo");
+			}
+		} catch (error) {
+			console.error("Error downloading logo:", error);
+		}
+	};
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -193,11 +231,19 @@ export default function Home() {
 				</div>
 			</nav>
 
-			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-[screen-height] overflow-y-hidden rounded-lg">
+				<div className="text-center mb-12">
+					<h1 className="text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600 mb-4">
+						Create Your Perfect Logo
+					</h1>
+					<p className="text-gray-600 max-w-2xl mx-auto text-xl">
+						Create unique, professional logos in minutes.
+					</p>
+				</div>
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 					{/* Left Column */}
 					<div>
-						<Card>
+						<Card className="h-full">
 							<CardContent className="p-6 space-y-4">
 								<div>
 									<label className="text-sm font-medium text-slate-700">
@@ -206,19 +252,23 @@ export default function Home() {
 									<Input
 										placeholder="Enter your brand name"
 										className="mt-1"
-                                        onChange={(e) => setCompanyName(e.target.value)}
-                                        value={companyName}
+										onChange={(e) =>
+											setCompanyName(e.target.value)
+										}
+										value={companyName}
 									/>
 								</div>
 								<div>
 									<label className="text-sm font-medium text-slate-700">
 										Style
 									</label>
-									<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+									<div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1">
 										{STYLE_OPTIONS.map((style) => (
 											<motion.button
 												key={style.id}
-                                                onClick={() => setSelectedStyle(style.id)}
+												onClick={() =>
+													setSelectedStyle(style.id)
+												}
 												whileHover={{ scale: 1.02 }}
 												whileTap={{ scale: 0.98 }}
 												className={`p-2 rounded-lg border text-center transition-all ${
@@ -449,7 +499,7 @@ export default function Home() {
 									/>
 								</div>
 								<Button
-                                    onClick={handleGenerate}
+									onClick={handleGenerate}
 									className="w-full h-12 text-lg bg-blue-600 hover:bg-blue-700"
 									disabled={!companyName || loading}
 								>
@@ -509,7 +559,7 @@ export default function Home() {
 									</motion.div>
 								) : (
 									<motion.div
-										className="h-full flex items-center justify-center text-center p-8"
+										className="h-full flex items-center text-center p-8 pt-44"
 										initial={{ opacity: 0 }}
 										animate={{ opacity: 1 }}
 										transition={{ duration: 0.4 }}
@@ -517,13 +567,13 @@ export default function Home() {
 										<div className="max-w-md space-y-4">
 											<Palette className="h-12 w-12 mx-auto text-blue-600 opacity-50" />
 											<h3 className="text-xl font-semibold text-slate-800">
-												Create Your Perfect Logo
+												Your Logo will appear here
 											</h3>
 											<p className="text-slate-500">
-												Fill in your brand details and
-												let our AI generate a unique,
-												professional logo tailored to
-												your business.
+												For best results, add additional
+												details and let our AI generate
+												a unique, professional logo
+												tailored to your business.
 											</p>
 										</div>
 									</motion.div>
@@ -532,6 +582,14 @@ export default function Home() {
 						</Card>
 					</div>
 				</div>
+                <div className="flex justify-center items-center mt-10 gap-x-4">
+                    <div>
+                        Built with love by <Link href="https://iampratham.dev" className="text-blue-600 hover:text-blue-700">Pratham</Link>
+                    </div>
+                    <div>
+                        Powered by <Link href="https://nebius.com/" className="text-blue-600 hover:text-blue-700">Nebius AI</Link>
+                    </div>
+                </div>
 			</main>
 		</div>
 	);

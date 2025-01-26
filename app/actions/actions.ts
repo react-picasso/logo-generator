@@ -2,6 +2,7 @@
 
 import OpenAI from "openai";
 import { z } from "zod";
+import dedent from "dedent";
 
 export async function downloadImage(url: string) {
 	"use server";
@@ -58,37 +59,43 @@ const FormSchema = z.object({
 	quality: z.enum(["standard", "hd"]).default("standard"),
 });
 
-const styleLookup: {[key: string]: string } = {
-    modern: 'modern style',
-    classic: 'classic style',
-    minimalist: 'minimalist style',
+const styleLookup: { [key: string]: string } = {
+	flashy: "Flashy, attention grabbing, bold, futuristic, and eye-catching. Use vibrant neon colors with metallic, shiny, and glossy accents.",
+	tech: "highly detailed, sharp focus, cinematic, photorealistic, Minimalist, clean, sleek, neutral color pallete with subtle accents, clean lines, shadows, and flat.",
+	corporate:
+		"modern, forward-thinking, flat design, geometric shapes, clean lines, natural colors with subtle accents, use strategic negative space to create visual interest.",
+	creative:
+		"playful, lighthearted, bright bold colors, rounded shapes, lively.",
+	abstract:
+		"abstract, artistic, creative, unique shapes, patterns, and textures to create a visually interesting and wild logo.",
+	minimal:
+		"minimal, simple, timeless, versatile, single color logo, use negative space, flat design with minimal details, Light, soft, and subtle.",
 };
 
 export async function generateLogo(formData: z.infer<typeof FormSchema>) {
-    "use server";
+	"use server";
 
-    try {
-        const validatedData = FormSchema.parse(formData);
+	try {
+		const validatedData = FormSchema.parse(formData);
 
-        const prompt = `Generate a single logo, high-quality, award-winning professional design, made for both digital and print media for ${validatedData.companyName}. The logo should be ${validatedData.style} and ${validatedData.symbolPreference}. The primary & main color should be ${validatedData.primaryColor} and the background color should be ${validatedData.secondaryColor}.The company name is ${validatedData.companyName}, make sure to include the company name in the logo.Don't make spelling mistakes. ${validatedData.additionalInfo ? `Additional info: ${validatedData.additionalInfo}` : ""}`;
+		const prompt = dedent`A single logo, high-quality, award-winning professional design, made for both digital and print media, only contains a few vector shapes, ${styleLookup[validatedData.style]} Primary color is ${validatedData.primaryColor.toLowerCase()} and background color is ${validatedData.secondaryColor.toLowerCase()}. The company name is ${validatedData.companyName}, make sure to include the company name in the logo. ${validatedData ? `Additional info: ${validatedData.additionalInfo}` : ""}`;
+		const response = await client.images.generate({
+			model: validatedData.model,
+			prompt: prompt,
+			response_format: "url",
+			size: validatedData.size,
+			quality: validatedData.quality,
+			n: 1,
+		});
 
-        const response = await client.images.generate({
-            model: validatedData.model,
-            prompt: prompt,
-            response_format: "url",
-            size: validatedData.size,
-            quality: validatedData.quality,
-            n: 1,
-        });
+		const imageUrl = response.data[0].url;
 
-        const imageUrl = response.data[0].url;
-
-        return {
-            success: true,
-            url: imageUrl
-        }
-    } catch (error) {
-        console.error('Error generating logo:', error);
-        return { success: false, error: 'Failed to generate logo' };
-    }
+		return {
+			success: true,
+			url: imageUrl,
+		};
+	} catch (error) {
+		console.error("Error generating logo:", error);
+		return { success: false, error: "Failed to generate logo" };
+	}
 }
