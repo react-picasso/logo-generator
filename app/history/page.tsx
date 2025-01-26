@@ -3,6 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { SelectLogo } from "@/db/schema";
+import { checkHistory } from "../actions/actions";
 const SAMPLE_LOGOS = [
 	{
 		id: 1,
@@ -26,6 +29,19 @@ const SAMPLE_LOGOS = [
 	},
 ];
 export default function History() {
+    const [logos, setLogos] = useState<SelectLogo[]>([]);
+
+    useEffect(() => {
+        const checkUserHistory = async () => {
+            const history = await checkHistory();
+            if (history) {
+                setLogos(history);
+            }
+        };
+
+        checkUserHistory();
+    }, []);
+
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -42,23 +58,21 @@ export default function History() {
 					</div>
 				</div>
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					{SAMPLE_LOGOS.map((logo) => (
+					{logos.map((logo) => (
 						<Card key={logo.id}>
 							<CardContent className="p-4">
 								<div className="aspect-square rounded-lg border-2 border-dashed border-slate-200 p-4 mb-4">
 									<img
-										src={logo.imageUrl}
-										alt={`${logo.companyName} logo`}
+										src={logo.image_url}
+										alt={`Logo ${logo.id}`}
 										className="w-full h-full object-contain"
 									/>
 								</div>
 								<div className="space-y-2">
 									<h3 className="font-medium text-slate-800">
-										{logo.companyName}
+										Created by {logo.username}
 									</h3>
 									<div className="flex gap-2 text-sm text-slate-500">
-										<span>{logo.style}</span>
-										<span>•</span>
 										<span>
 											{new Date(
 												logo.createdAt
@@ -70,7 +84,7 @@ export default function History() {
 											className="w-6 h-6 rounded-full border"
 											style={{
 												backgroundColor:
-													logo.primaryColor,
+													logo.primary_color,
 											}}
 											title="Primary Color"
 										/>
@@ -78,14 +92,14 @@ export default function History() {
 											className="w-6 h-6 rounded-full border"
 											style={{
 												backgroundColor:
-													logo.backgroundColor,
+													logo.background_color,
 											}}
 											title="Background Color"
 										/>
 									</div>
 									<Button
 										onClick={() =>
-											window.open(logo.imageUrl, "_blank")
+											window.open(logo.image_url, "_blank")
 										}
 										variant="outline"
 										className="w-full mt-2"
