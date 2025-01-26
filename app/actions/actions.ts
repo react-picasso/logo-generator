@@ -3,6 +3,10 @@
 import OpenAI from "openai";
 import { z } from "zod";
 import dedent from "dedent";
+import { currentUser } from "@clerk/nextjs/server";
+import { InsertLogo, logosTable } from "@/db/schema";
+import { db } from "@/db";
+import { desc, eq } from "drizzle-orm";
 
 export async function downloadImage(url: string) {
 	"use server";
@@ -76,9 +80,23 @@ export async function generateLogo(formData: z.infer<typeof FormSchema>) {
 	"use server";
 
 	try {
+		const user = await currentUser();
+		if (!user) {
+			return { success: false, error: "User not authenticated" };
+		}
 		const validatedData = FormSchema.parse(formData);
 
-		const prompt = dedent`A single logo, high-quality, award-winning professional design, made for both digital and print media, only contains a few vector shapes, ${styleLookup[validatedData.style]} Primary color is ${validatedData.primaryColor.toLowerCase()} and background color is ${validatedData.secondaryColor.toLowerCase()}. The company name is ${validatedData.companyName}, make sure to include the company name in the logo. ${validatedData ? `Additional info: ${validatedData.additionalInfo}` : ""}`;
+		const prompt = dedent`A single logo, high-quality, award-winning professional design, made for both digital and print media, only contains a few vector shapes, ${
+			styleLookup[validatedData.style]
+		} 
+        
+        Primary color is ${validatedData.primaryColor.toLowerCase()} and background color is ${validatedData.secondaryColor.toLowerCase()}. The company name is ${
+			validatedData.companyName
+		}, make sure to include the company name in the logo. ${
+			validatedData
+				? `Additional info: ${validatedData.additionalInfo}`
+				: ""
+		}`;
 		const response = await client.images.generate({
 			model: validatedData.model,
 			prompt: prompt,
@@ -88,7 +106,22 @@ export async function generateLogo(formData: z.infer<typeof FormSchema>) {
 			n: 1,
 		});
 
-		const imageUrl = response.data[0].url;
+		const imageUrl = response.data[0].url || "";
+
+		const DatabaseData: InsertLogo = {
+			image_url: imageUrl,
+			primary_color: validatedData.primaryColor,
+			background_color: validatedData.secondaryColor,
+			username: user.username ?? user.firstName ?? "Anonymous",
+			userId: user.id,
+		};
+
+		try {
+			await db.insert(logosTable).values(DatabaseData);
+		} catch (error) {
+			console.error("Error inserting logo into database");
+			throw error;
+		}
 
 		return {
 			success: true,
@@ -97,5 +130,36 @@ export async function generateLogo(formData: z.infer<typeof FormSchema>) {
 	} catch (error) {
 		console.error("Error generating logo:", error);
 		return { success: false, error: "Failed to generate logo" };
+	}
+}
+
+export async function checkHistory() {
+	const user = await currentUser();
+
+	if (!user) {
+		return null;
+	}
+
+	try {
+		const userLogos = await db
+			.select()
+			.from(logosTable)
+			.where(eq(logosTable.userId, user.id))
+			.orderBy(desc(logosTable.createdAt));
+
+		return userLogos;
+	} catch (error) {
+		console.error(error);
+		return null;
+	}
+}
+
+export async function allLogos() {
+    try {
+        const allLogos = await db.select().from(logosTable);
+        return allLogos;
+    } catch (error) {
+		console.error(error);
+		return null;
 	}
 }

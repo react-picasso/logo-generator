@@ -26,7 +26,7 @@ const Navigation = () => {
                 <div className="flex items-center space-x-4">
                     <SignedOut>
                         <SignInButton signUpForceRedirectUrl={`${domain}/generate`} forceRedirectUrl={`${domain}/generate`}>
-                            <Button variant="ghost" className="hidden md:inline-flex">
+                            <Button className="hidden md:inline-flex text-white">
                                 Sign In
                             </Button>
                         </SignInButton>

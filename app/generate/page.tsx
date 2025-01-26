@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadImage, generateLogo } from "../actions/actions";
+import { UserButton, useUser } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
 
 const STYLE_OPTIONS = [
 	{
@@ -138,6 +140,25 @@ export default function Home() {
 	const [loading, setLoading] = useState(false);
 	const [generatedLogo, setGeneratedLogo] = useState("");
 
+    const { isSignedIn, isLoaded, user } = useUser();
+
+    if (!isLoaded) {
+        return (
+            <div>
+                <div className="min-h-screen flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-4">
+                        <RefreshCw className="h-8 w-8 animate-spin text-blue-600"/>
+                        <p className="text-slate-600">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isSignedIn) {
+        return redirect("/");
+    }
+
 	const handleGenerate = async () => {
 		setLoading(true);
 		try {
@@ -211,10 +232,9 @@ export default function Home() {
 							</Link>
 						</div>
 
-						<div className="flex items-center gap-4">
+						<div className="flex items-center gap-8">
 							<Link href="/history">
 								<Button
-									variant="outline"
 									size="sm"
 									className="gap-2"
 								>
@@ -222,10 +242,11 @@ export default function Home() {
 									History
 								</Button>
 							</Link>
-							<Button variant="outline" size="sm">
+							{/* <Button variant="outline" size="sm">
 								<Crown className="h-4 w-4 mr-2 text-amber-500" />
 								Upgrade to Pro
-							</Button>
+							</Button> */}
+                            <UserButton />
 						</div>
 					</div>
 				</div>
