@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { downloadImage, generateLogo } from "../actions/actions";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 const STYLE_OPTIONS = [
 	{
@@ -141,6 +142,7 @@ export default function Home() {
 	const [generatedLogo, setGeneratedLogo] = useState("");
 
     const { isSignedIn, isLoaded, user } = useUser();
+    const { toast } = useToast();
 
     if (!isLoaded) {
         return (
@@ -176,8 +178,16 @@ export default function Home() {
 
 			if (result.success && result.url) {
 				setGeneratedLogo(result.url);
+                toast({
+                    title: "Logo generated successfully",
+                    description: "Your new logo is ready to download"
+                });
 			} else {
-				console.error("Failed to generate logo.");
+				toast({
+                    title: "Generation failed",
+                    description: result.error || "Failed to generate logo",
+                    variant: "destructive",
+                });
 			}
 		} finally {
 			setLoading(false);
@@ -194,11 +204,23 @@ export default function Home() {
 				document.body.appendChild(a);
 				a.click();
 				document.body.removeChild(a);
+                toast({
+                    title: "Download started",
+                    description: "Your logo is being downloaded"
+                });
 			} else {
-				console.error("Failed to download logo");
+				toast({
+                    title: "Download failed",
+                    description: "Failed to download logo",
+                    variant: "destructive",
+                });
 			}
 		} catch (error) {
-			console.error("Error downloading logo:", error);
+			toast({
+                title: "Error",
+                description: "An unexpected error occured while downloading",
+                variant: "destructive",
+            })
 		}
 	};
 

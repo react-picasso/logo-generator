@@ -3,10 +3,12 @@
 import OpenAI from "openai";
 import { z } from "zod";
 import dedent from "dedent";
-import { currentUser } from "@clerk/nextjs/server";
+import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { InsertLogo, logosTable } from "@/db/schema";
 import { db } from "@/db";
 import { desc, eq } from "drizzle-orm";
+import { rateLimit } from "@/lib/upstash";
+import { toast } from "@/hooks/use-toast";
 
 export async function downloadImage(url: string) {
 	"use server";
@@ -84,6 +86,36 @@ export async function generateLogo(formData: z.infer<typeof FormSchema>) {
 		if (!user) {
 			return { success: false, error: "User not authenticated" };
 		}
+
+		const { success: rateLimitSuccess, remaining } = await rateLimit.limit(
+			user.id
+		);
+
+		await (
+			await clerkClient()
+		).users.updateUserMetadata(user.id, {
+			unsafeMetadata: {
+				remaining,
+			},
+		});
+
+		console.log("Your remaining logo generation limit is:", remaining);
+
+		if (remaining === 1) {
+			await toast({
+				title: "Warning",
+				description: "You only have 1 logo generation remaining",
+				variant: "destructive",
+			});
+		}
+
+		if (!remaining) {
+			return {
+				success: false,
+				error: "You've reached your logo generation limit. Please try again later.",
+			};
+		}
+
 		const validatedData = FormSchema.parse(formData);
 
 		const prompt = dedent`A single logo, high-quality, award-winning professional design, made for both digital and print media, only contains a few vector shapes, ${
@@ -155,10 +187,10 @@ export async function checkHistory() {
 }
 
 export async function allLogos() {
-    try {
-        const allLogos = await db.select().from(logosTable);
-        return allLogos;
-    } catch (error) {
+	try {
+		const allLogos = await db.select().from(logosTable);
+		return allLogos;
+	} catch (error) {
 		console.error(error);
 		return null;
 	}

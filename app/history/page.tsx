@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SelectLogo } from "@/db/schema";
 import { checkHistory } from "../actions/actions";
+import { useToast } from "@/hooks/use-toast";
 const SAMPLE_LOGOS = [
 	{
 		id: 1,
@@ -29,18 +30,33 @@ const SAMPLE_LOGOS = [
 	},
 ];
 export default function History() {
-    const [logos, setLogos] = useState<SelectLogo[]>([]);
+	const [logos, setLogos] = useState<SelectLogo[]>([]);
+	const { toast } = useToast();
 
-    useEffect(() => {
-        const checkUserHistory = async () => {
-            const history = await checkHistory();
-            if (history) {
-                setLogos(history);
-            }
-        };
+	useEffect(() => {
+		const checkUserHistory = async () => {
+			const history = await checkHistory();
+			if (history) {
+				setLogos(history);
+			} else {
+				toast({
+					title: "Error",
+					description: "Failed to load history.",
+					variant: "destructive",
+				});
+			}
+		};
 
-        checkUserHistory();
-    }, []);
+		checkUserHistory();
+	}, [toast]);
+
+	const handleDownload = (imageUrl: string) => {
+		window.open(imageUrl, "_blank");
+		toast({
+			title: "Opening image",
+			description: "The logo will open in a new tab",
+		});
+	};
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -99,7 +115,7 @@ export default function History() {
 									</div>
 									<Button
 										onClick={() =>
-											window.open(logo.image_url, "_blank")
+											handleDownload(logo.image_url)
 										}
 										variant="outline"
 										className="w-full mt-2"
